@@ -1,22 +1,36 @@
 package com.micro.userservice.services;
 
+import com.micro.userservice.entities.Hotel;
+import com.micro.userservice.entities.Rating;
 import com.micro.userservice.entities.User;
 import com.micro.userservice.exception.ResourceNotFoundException;
 import com.micro.userservice.exception.UserDoesNotExistsException;
 import com.micro.userservice.repositories.UserRepository;
+import com.micro.userservice.webclient.HotelService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.Serial;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImplementation implements UserService{
 
     @Autowired
+    HotelService hotelService;
+
+    @Autowired
+    RestTemplate restTemplate;
+
+    @Autowired
     UserRepository userRepository;
+
+    Logger logger = LoggerFactory.getLogger(UserServiceImplementation.class);
 
     @Override
     public User saveUser(User user) {
@@ -32,7 +46,24 @@ public class UserServiceImplementation implements UserService{
 
     @Override
     public User getUserById(String userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User with given id "+userId+" not found on server !!"));
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User with given id "+userId+" not found on server !!"));
+
+        Rating[] array = restTemplate.getForObject("http://RATINGSERVICE/ratings/users/"+user.getUserId(), Rating[].class);
+
+        List<Rating> arrayList = Arrays.stream(array).toList();
+        List<Rating> list = arrayList.stream().map(rating -> {
+//            ResponseEntity<Hotel> response = restTemplate.getForEntity("http://HOTELSERVICE/hotels/"+rating.getHotelId(), Hotel.class);
+//            Hotel hotel = response.getBody();
+
+            Hotel hotel = hotelService.getHotel(rating.getHotelId());
+            
+            rating.setHotel(hotel);
+            return rating;
+        }).collect(Collectors.toList());
+        logger.info("{}",list);
+        user.setRatingList(list);
+        return user;
     }
 
     @Override
