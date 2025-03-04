@@ -7,6 +7,7 @@ import com.micro.userservice.exception.ResourceNotFoundException;
 import com.micro.userservice.exception.UserDoesNotExistsException;
 import com.micro.userservice.repositories.UserRepository;
 import com.micro.userservice.webclient.HotelService;
+import com.micro.userservice.webclient.RatingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,9 @@ public class UserServiceImplementation implements UserService{
 
     @Autowired
     HotelService hotelService;
+
+    @Autowired
+    RatingService ratingService;
 
     @Autowired
     RestTemplate restTemplate;
@@ -57,7 +61,7 @@ public class UserServiceImplementation implements UserService{
 //            Hotel hotel = response.getBody();
 
             Hotel hotel = hotelService.getHotel(rating.getHotelId());
-            
+
             rating.setHotel(hotel);
             return rating;
         }).collect(Collectors.toList());
